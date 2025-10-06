@@ -1,8 +1,14 @@
 package com.example.capabilities.web.handler;
 
 import com.example.capabilities.domain.error.DomainException;
-import com.example.capabilities.domain.model.Capabilities;
-import com.example.capabilities.domain.usecase.*;
+import com.example.capabilities.domain.model.CapabilitiesPageRequest;
+import com.example.capabilities.domain.model.CapabilitiesSortField;
+import com.example.capabilities.domain.model.PaginatedCapabilities;
+import com.example.capabilities.domain.model.CapabilitySummary;
+import com.example.capabilities.domain.model.SortDirection;
+import com.example.capabilities.domain.model.TechnologySummary;
+import com.example.capabilities.domain.usecase.CreateCapabilitiesUseCase;
+import com.example.capabilities.domain.usecase.ListCapabilitiesUseCase;
 import com.example.capabilities.web.dto.Requests.*;
 import com.example.capabilities.web.dto.Responses.*;
 import org.springframework.http.MediaType;
@@ -19,10 +25,10 @@ import static org.springframework.web.reactive.function.BodyInserters.fromValue;
 public class CapabilitiesHandler {
   private final Validator validator;
   private final CreateCapabilitiesUseCase createCapabilities;
-  private final GetAllTechnologiesUseCase getAllTechnologies;
+  private final ListCapabilitiesUseCase listCapabilities;
 
-  public CapabilitiesHandler(Validator validator, CreateCapabilitiesUseCase createCapabilities, GetAllTechnologiesUseCase getAllTechnologies) {
-    this.validator = validator; this.createCapabilities = createCapabilities; this.getAllTechnologies = getAllTechnologies;
+  public CapabilitiesHandler(Validator validator, CreateCapabilitiesUseCase createCapabilities, ListCapabilitiesUseCase listCapabilities) {
+    this.validator = validator; this.createCapabilities = createCapabilities; this.listCapabilities = listCapabilities;
   }
 
   public Mono<ServerResponse> createCapabilities(ServerRequest req){
@@ -33,18 +39,60 @@ public class CapabilitiesHandler {
   }
 
   public Mono<ServerResponse> getAllCapabilities(ServerRequest req) {
-    return ServerResponse.ok()
-            .contentType(MediaType.APPLICATION_JSON)
-            .body(getAllTechnologies.execute().map(Mapper::capabilities), CapabilitiesResponse.class);
+    return Mono.justOrEmpty(parseRequest(req))
+            .switchIfEmpty(Mono.error(new DomainException(com.example.capabilities.domain.error.ErrorCodes.VALIDATION_ERROR, "invalid.pagination.parameters")))
+            .flatMap(listCapabilities::execute)
+            .flatMap(page -> okJson(Mapper.page(page)))
+            .onErrorResume(DomainException.class, ex -> problem(mapHttp(ex.getCode()), ex.getMessage()));
   }
 
 
   // helpers
   private static class Mapper {
-    static CapabilitiesResponse capabilities(Capabilities f){
-      return new CapabilitiesResponse(
-        f.id(), f.name(), f.description(), f.technologies()
+    static CapabilitiesPageResponse page(PaginatedCapabilities page) {
+      return new CapabilitiesPageResponse(
+              page.content().stream().map(Mapper::capabilities).toList(),
+              page.page(),
+              page.size(),
+              page.totalElements(),
+              page.totalPages()
       );
+    }
+
+    static CapabilitiesResponse capabilities(CapabilitySummary summary){
+      return new CapabilitiesResponse(
+        summary.id(),
+        summary.name(),
+        summary.description(),
+        summary.technologies().stream().map(Mapper::technology).toList()
+      );
+    }
+
+    static TechnologyResponse technology(TechnologySummary technology) {
+      return new TechnologyResponse(technology.id(), technology.name());
+    }
+  }
+
+  private java.util.Optional<CapabilitiesPageRequest> parseRequest(ServerRequest req) {
+    try {
+      int page = req.queryParam("page").map(Integer::parseInt).orElse(0);
+      int size = req.queryParam("size").map(Integer::parseInt).orElse(10);
+      CapabilitiesSortField sortField = req.queryParam("sortBy")
+              .map(String::toUpperCase)
+              .map(value -> switch (value) {
+                case "NAME" -> CapabilitiesSortField.NAME;
+                case "TECHNOLOGY_COUNT", "TECHNOLOGIES" -> CapabilitiesSortField.TECHNOLOGY_COUNT;
+                default -> throw new IllegalArgumentException("invalid.sort.by");
+              })
+              .orElse(CapabilitiesSortField.NAME);
+      SortDirection direction = req.queryParam("order")
+              .map(String::toUpperCase)
+              .map(SortDirection::valueOf)
+              .orElse(SortDirection.ASC);
+      CapabilitiesPageRequest request = new CapabilitiesPageRequest(page, size, sortField, direction);
+      return java.util.Optional.of(request);
+    } catch (IllegalArgumentException ex) {
+      return java.util.Optional.empty();
     }
   }
 
