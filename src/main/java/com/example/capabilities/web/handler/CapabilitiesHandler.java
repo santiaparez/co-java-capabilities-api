@@ -27,7 +27,8 @@ public class CapabilitiesHandler {
 
   public Mono<ServerResponse> createCapabilities(ServerRequest req){
     return validatedBody(req, CreateCapabilitiesRequest.class, body ->
-      createCapabilities.execute(body.name(), body.description()).flatMap(f -> okJson(new IdResponse(f.id())))
+      createCapabilities.execute(body.name(), body.description(), body.technologies())
+          .flatMap(f -> okJson(new IdResponse(f.id())))
     );
   }
 
@@ -42,7 +43,7 @@ public class CapabilitiesHandler {
   private static class Mapper {
     static CapabilitiesResponse capabilities(Capabilities f){
       return new CapabilitiesResponse(
-        f.id(), f.name(), f.description()
+        f.id(), f.name(), f.description(), f.technologies()
       );
     }
   }
@@ -56,7 +57,8 @@ public class CapabilitiesHandler {
         return problem(400, msg);
       }
       return fn.apply(body);
-    }).onErrorResume(DomainException.class, ex -> problem(mapHttp(ex.getCode()), ex.getMessage()));
+    }).onErrorResume(DomainException.class, ex -> problem(mapHttp(ex.getCode()), ex.getMessage()))
+        .onErrorResume(IllegalArgumentException.class, ex -> problem(400, ex.getMessage()));
   }
 
   private Mono<ServerResponse> okJson(Object any){

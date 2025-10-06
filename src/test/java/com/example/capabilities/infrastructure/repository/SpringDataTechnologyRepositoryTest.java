@@ -18,6 +18,7 @@ class SpringDataCapabilitiesRepositoryTest {
     entity.setId("f-1");
     entity.setName("Acme");
     entity.setDescription("des");
+    entity.setTechnologies("t1,t2,t3");
     return entity;
   }
 
@@ -30,7 +31,10 @@ class SpringDataCapabilitiesRepositoryTest {
         .thenReturn(Flux.just(entity));
 
     StepVerifier.create(repository.findAll())
-        .assertNext(capabilities -> assertEquals("Acme", capabilities.name()))
+        .assertNext(capabilities -> {
+          assertEquals("Acme", capabilities.name());
+          assertEquals(java.util.List.of("t1", "t2", "t3"), capabilities.technologies());
+        })
         .verifyComplete();
 
     Mockito.verify(template).select(Mockito.any(Query.class), Mockito.eq(CapabilitiesEntity.class));
@@ -45,7 +49,10 @@ class SpringDataCapabilitiesRepositoryTest {
         .thenReturn(Mono.just(entity));
 
     StepVerifier.create(repository.findById("f-1"))
-        .assertNext(capabilities -> assertEquals("Acme", capabilities.name()))
+        .assertNext(capabilities -> {
+          assertEquals("Acme", capabilities.name());
+          assertEquals(java.util.List.of("t1", "t2", "t3"), capabilities.technologies());
+        })
         .verifyComplete();
 
     Mockito.verify(template).selectOne(Mockito.any(Query.class), Mockito.eq(CapabilitiesEntity.class));
@@ -60,7 +67,10 @@ class SpringDataCapabilitiesRepositoryTest {
         .thenReturn(Mono.just(entity));
 
     StepVerifier.create(repository.findByName("Acme"))
-        .assertNext(capabilities -> assertEquals("Acme", capabilities.name()))
+        .assertNext(capabilities -> {
+          assertEquals("Acme", capabilities.name());
+          assertEquals(java.util.List.of("t1", "t2", "t3"), capabilities.technologies());
+        })
         .verifyComplete();
 
     Mockito.verify(template).selectOne(Mockito.any(Query.class), Mockito.eq(CapabilitiesEntity.class));

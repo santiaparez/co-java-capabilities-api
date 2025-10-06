@@ -18,10 +18,11 @@ class CreateCapabilitiesUseCaseTest {
     Mockito.when(repo.findByName("My Capabilities")).thenReturn(Mono.empty());
     Mockito.when(repo.save(Mockito.any(Capabilities.class))).thenAnswer(i -> Mono.just((Capabilities) i.getArguments()[0]));
     var uc = new CreateCapabilitiesUseCase(repo);
-    StepVerifier.create(uc.execute("My Capabilities", "des"))
+    StepVerifier.create(uc.execute("My Capabilities", "des", java.util.List.of("t1", "t2", "t3")))
         .assertNext(capabilities -> {
           assertNotNull(capabilities.id());
           assertEquals("My Capabilities", capabilities.name());
+          assertEquals(java.util.List.of("t1", "t2", "t3"), capabilities.technologies());
         })
         .verifyComplete();
   }
@@ -29,13 +30,27 @@ class CreateCapabilitiesUseCaseTest {
   @Test
   void create_conflict_when_name_exists(){
     SpringDataCapabilitiesRepository repo = Mockito.mock(SpringDataCapabilitiesRepository.class);
-    Mockito.when(repo.findByName("My Capabilities")).thenReturn(Mono.just(new Capabilities("id", "My Capabilities", "des")));
+    Mockito.when(repo.findByName("My Capabilities")).thenReturn(Mono.just(new Capabilities("id", "My Capabilities", "des", java.util.List.of("t1","t2","t3"))));
     var uc = new CreateCapabilitiesUseCase(repo);
 
-    StepVerifier.create(uc.execute("My Capabilities", "des"))
+    StepVerifier.create(uc.execute("My Capabilities", "des", java.util.List.of("t1", "t2", "t3")))
         .expectErrorSatisfies(error -> {
           assertInstanceOf(DomainException.class, error);
           assertEquals("capabilities.name.already.exists", error.getMessage());
+        })
+        .verify();
+  }
+
+  @Test
+  void create_validation_error_when_technologies_invalid(){
+    SpringDataCapabilitiesRepository repo = Mockito.mock(SpringDataCapabilitiesRepository.class);
+    Mockito.when(repo.findByName("My Capabilities")).thenReturn(Mono.empty());
+    var uc = new CreateCapabilitiesUseCase(repo);
+
+    StepVerifier.create(uc.execute("My Capabilities", "des", java.util.List.of("t1", "t2")))
+        .expectErrorSatisfies(error -> {
+          assertInstanceOf(DomainException.class, error);
+          assertEquals("invalid.capabilities.technologies.min", error.getMessage());
         })
         .verify();
   }

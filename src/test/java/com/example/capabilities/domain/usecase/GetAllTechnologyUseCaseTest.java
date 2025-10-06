@@ -14,7 +14,7 @@ class GetAllCapabilitiesUseCaseTest {
 
   @Test
   void delegatesToRepository() {
-    Capabilities capabilities = new Capabilities("f-1", "Acme", "des");
+    Capabilities capabilities = new Capabilities("f-1", "Acme", "des", java.util.List.of("t1","t2","t3"));
     Mockito.when(repo.findAll()).thenReturn(Flux.just(capabilities));
 
     StepVerifier.create(useCase.execute())

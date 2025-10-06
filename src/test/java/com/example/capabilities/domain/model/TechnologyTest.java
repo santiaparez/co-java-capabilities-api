@@ -8,11 +8,12 @@ class CapabilitiesTest {
 
   @Test
   void createCapabilities_ok() {
-    Capabilities capabilities = new Capabilities("f-1", "Acme", "des");
+    Capabilities capabilities = new Capabilities("f-1", "Acme", "des", java.util.List.of("t1", "t2", "t3"));
 
     assertEquals("f-1", capabilities.id());
     assertEquals("Acme", capabilities.name());
     assertEquals("des", capabilities.description());
+    assertEquals(java.util.List.of("t1", "t2", "t3"), capabilities.technologies());
   }
 
 

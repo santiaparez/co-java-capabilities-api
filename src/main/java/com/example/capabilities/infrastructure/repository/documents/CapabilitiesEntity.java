@@ -16,6 +16,9 @@ public class CapabilitiesEntity {
     @Column("description")
     private String description;
 
+    @Column("technologies")
+    private String technologies;
+
     public String getId() {
         return id;
     }
@@ -38,5 +41,13 @@ public class CapabilitiesEntity {
 
     public void setDescription(String description) {
         this.description = description;
+    }
+
+    public String getTechnologies() {
+        return technologies;
+    }
+
+    public void setTechnologies(String technologies) {
+        this.technologies = technologies;
     }
 }
