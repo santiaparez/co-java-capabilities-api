@@ -40,11 +40,12 @@ class CapabilitiesHandlerTest {
 
   @Test
   void createTech_success() {
-    Mockito.when(create.execute("Acme","des")).thenReturn(Mono.just(new Capabilities("id-1", "Acme", "des")));
+    Mockito.when(create.execute("Acme","des", java.util.List.of("t1","t2","t3")))
+        .thenReturn(Mono.just(new Capabilities("id-1", "Acme", "des", java.util.List.of("t1","t2","t3"))));
 
     client.post().uri("/capabilities")
         .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(new CreateCapabilitiesRequest("Acme","des"))
+        .bodyValue(new CreateCapabilitiesRequest("Acme","des", java.util.List.of("t1","t2","t3")))
         .exchange()
         .expectStatus().isOk()
         .expectBody()
@@ -55,7 +56,7 @@ class CapabilitiesHandlerTest {
   void createTech_validationError() {
     client.post().uri("/capabilities")
         .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(new CreateCapabilitiesRequest("",""))
+        .bodyValue(new CreateCapabilitiesRequest("","", java.util.List.of("t1","t2","t3")))
         .exchange()
         .expectStatus().isBadRequest()
         .expectBody()
