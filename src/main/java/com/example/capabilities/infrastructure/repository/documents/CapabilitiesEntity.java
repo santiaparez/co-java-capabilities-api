@@ -1,7 +1,6 @@
 package com.example.capabilities.infrastructure.repository.documents;
 
 import org.springframework.data.annotation.Id;
-import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
 
 @Table("capabilities")
@@ -10,14 +9,9 @@ public class CapabilitiesEntity {
     @Id
     private String id;
 
-    @Column("name")
     private String name;
 
-    @Column("description")
     private String description;
-
-    @Column("technologies")
-    private String technologies;
 
     public String getId() {
         return id;
@@ -41,13 +35,5 @@ public class CapabilitiesEntity {
 
     public void setDescription(String description) {
         this.description = description;
-    }
-
-    public String getTechnologies() {
-        return technologies;
-    }
-
-    public void setTechnologies(String technologies) {
-        this.technologies = technologies;
     }
 }
